@@ -11,12 +11,21 @@ if( !exists("dfSCC") ) # read only if not already exists
 ## Compare emissions from motor vehicle sources in Baltimore City with emissions from motor vehicle sources in Los Angeles County, 
 ## fips == "24510" => Balitmore
 ## California (fips == "06037"). Which city has seen greater changes over time in motor vehicle emissions?
-aggEmissionsYears <- ddply(NEI[dfNEI$fips == "24510" & NEI$type == "ON-ROAD",], .(type, year), summarize, TotalEmissions = sum(Emissions))
 
-png("plot6.png", width=840, height=480)
-g <- ggplot(aggEmissionsYears, aes(factor(year), TotalEmissions))
-g <- g + geom_bar(stat="identity",fill="grey",width=0.75) +
-  labs(title = "Total Emissions from Motor Vehicles in Baltimore City", x = "Year", y = "Total Emissions (Tons)")
+
+## Gather the subset of the NEI data for city and searching for ON-ROAD type in NEI
+subsetNEI <- NEI[(dfNEI$fips=="24510"|dfNEI$fips=="06037") & dfNEI$type=="ON-ROAD",  ]
+
+aggregatedTotalByYearAndFips <- aggregate(Emissions ~ year + fips, subsetNEI, sum)
+aggregatedTotalByYearAndFips$fips[aggregatedTotalByYearAndFips$fips=="24510"] <- "Baltimore, MD"
+aggregatedTotalByYearAndFips$fips[aggregatedTotalByYearAndFips$fips=="06037"] <- "Los Angeles, CA"
+
+png("plot6.png", width=800, height=480)
+
+g <- ggplot(aggregatedTotalByYearAndFips, aes(factor(year), Emissions))
+g <- g + facet_grid(. ~ fips)
+g <- g + geom_bar(stat="identity",fill="grey",width=0.75)  +
+  labs(title = "Motor Vehicle Source Emissions in Baltimore & LA", x = "Year", y = "Total Emissions (Tons)")
 print(g)
 
-dev.off() #close device
+dev.off() # close device
